@@ -13,4 +13,8 @@ public static class OVODomainErrorCodes
     public const string AccountFrozen = "OVO:AccountFrozen";
 
     public const string RenderDailyLimitExceeded = "OVO:RenderDailyLimitExceeded";
+
+    public const string ObjectStorageNotConfigured = "OVO:ObjectStorageNotConfigured";
+
+    public const string ObjectStorageOperationFailed = "OVO:ObjectStorageOperationFailed";
 }

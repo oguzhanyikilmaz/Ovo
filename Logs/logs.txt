@@ -1,0 +1,76 @@
+2026-03-23 01:07:39.096 +03:00 [INF] Started database migrations...
+2026-03-23 01:07:39.102 +03:00 [INF] Migrating schema for host database...
+2026-03-23 01:07:39.500 +03:00 [ERR] An error occurred using the connection to database '' on server ''.
+2026-03-23 01:11:20.963 +03:00 [INF] Started database migrations...
+2026-03-23 01:11:20.969 +03:00 [INF] Migrating schema for host database...
+2026-03-23 01:11:25.119 +03:00 [ERR] Failed executing DbCommand (347ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-03-23 01:12:07.247 +03:00 [INF] Executing host database seed...
+2026-03-23 01:12:09.617 +03:00 [ERR] Failed executing DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = Guid), @p5='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Int32), @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid), @p12='?' (DbType = DateTime), @p13='?' (DbType = Boolean), @p14='?' (DbType = DateTime), @p15='?', @p16='?', @p17='?', @p18='?', @p19='?', @p20='?', @p21='?' (DbType = Boolean), @p22='?', @p23='?' (DbType = Guid), @p24='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AbpUsers" ("Id", "ConcurrencyStamp", "CreationTime", "CreatorId", "DeleterId", "DeletionTime", "Email", "EntityVersion", "ExtraProperties", "IsActive", "LastModificationTime", "LastModifierId", "LastPasswordChangeTime", "LockoutEnabled", "LockoutEnd", "Name", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "SecurityStamp", "ShouldChangePasswordOnNextLogin", "Surname", "TenantId", "UserName")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24)
+RETURNING "AccessFailedCount", "EmailConfirmed", "IsDeleted", "IsExternal", "PhoneNumberConfirmed", "TwoFactorEnabled";
+2026-03-23 01:12:10.272 +03:00 [ERR] An exception occurred in the database while saving changes for context type 'OVO.EntityFrameworkCore.OVODbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Local to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options, IDbTypeResolver dbTypeResolver)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(ReloadableState reloadableState, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Local to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options, IDbTypeResolver dbTypeResolver)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(ReloadableState reloadableState, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+2026-03-23 01:18:46.150 +03:00 [INF] Started database migrations...
+2026-03-23 01:18:46.155 +03:00 [INF] Migrating schema for host database...
+2026-03-23 01:18:52.282 +03:00 [INF] Executing host database seed...
+2026-03-23 01:19:09.923 +03:00 [INF] Successfully completed host database migrations.
+2026-03-23 01:19:10.333 +03:00 [INF] Successfully completed all database migrations.
+2026-03-23 01:19:10.333 +03:00 [INF] You can safely end this process...

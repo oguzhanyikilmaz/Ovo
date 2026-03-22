@@ -13,6 +13,7 @@
     "Permission:Social": "Sosyal",
     "Permission:TryOn": "Try-On",
     "Permission:Wishlist": "Favoriler",
-    "Permission:Reports": "Raporlar"
+    "Permission:Reports": "Raporlar",
+    "Permission:FileStorage": "Dosya depolama"
   }
 }

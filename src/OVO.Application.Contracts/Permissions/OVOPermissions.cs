@@ -48,4 +48,9 @@ public static class OVOPermissions
     {
         public const string Create = GroupName + ".Reports.Create";
     }
+
+    public static class FileStorage
+    {
+        public const string Default = GroupName + ".FileStorage.Default";
+    }
 }

@@ -18,6 +18,7 @@ public class OVOPermissionDefinitionProvider : PermissionDefinitionProvider
         myGroup.AddPermission(OVOPermissions.TryOn.Default, L("Permission:TryOn"));
         myGroup.AddPermission(OVOPermissions.Wishlist.Default, L("Permission:Wishlist"));
         myGroup.AddPermission(OVOPermissions.Reports.Create, L("Permission:Reports"));
+        myGroup.AddPermission(OVOPermissions.FileStorage.Default, L("Permission:FileStorage"));
     }
 
     private static LocalizableString L(string name)

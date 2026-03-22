@@ -20,7 +20,8 @@ public class OVOPermissionDataSeedContributor : IDataSeedContributor, ITransient
         OVOPermissions.Social.Default,
         OVOPermissions.TryOn.Default,
         OVOPermissions.Wishlist.Default,
-        OVOPermissions.Reports.Create
+        OVOPermissions.Reports.Create,
+        OVOPermissions.FileStorage.Default
     };
 
     private readonly IPermissionDataSeeder _permissionDataSeeder;

@@ -13,6 +13,7 @@
     "Permission:Social": "Social",
     "Permission:TryOn": "Try-On",
     "Permission:Wishlist": "Wishlist",
-    "Permission:Reports": "Reports"
+    "Permission:Reports": "Reports",
+    "Permission:FileStorage": "File storage"
   }
 }

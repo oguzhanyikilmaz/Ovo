@@ -1,14 +1,20 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Globalization;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 using OVO;
 using OVO.AiPipeline;
+using OVO.FileStorage;
 using OVO.Permissions;
 using OVO.Wardrobe;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Linq;
 using Volo.Abp.Users;
@@ -21,15 +27,24 @@ public class WardrobeAppService : OVOAppService, IWardrobeAppService
     private readonly IGarmentRepository _garmentRepository;
     private readonly IAiPipelineService _aiPipeline;
     private readonly IAsyncQueryableExecuter _asyncExecuter;
+    private readonly IObjectStorageService _objectStorage;
+    private readonly MinioStorageOptions _minioOptions;
+    private readonly IValidator<CreateGarmentMultipartMetadataDto> _multipartMetadataValidator;
 
     public WardrobeAppService(
         IGarmentRepository garmentRepository,
         IAiPipelineService aiPipeline,
-        IAsyncQueryableExecuter asyncExecuter)
+        IAsyncQueryableExecuter asyncExecuter,
+        IObjectStorageService objectStorage,
+        IOptions<MinioStorageOptions> minioOptions,
+        IValidator<CreateGarmentMultipartMetadataDto> multipartMetadataValidator)
     {
         _garmentRepository = garmentRepository;
         _aiPipeline = aiPipeline;
         _asyncExecuter = asyncExecuter;
+        _objectStorage = objectStorage;
+        _minioOptions = minioOptions.Value;
+        _multipartMetadataValidator = multipartMetadataValidator;
     }
 
     public virtual async Task<GarmentDto> GetAsync(Guid id)
@@ -62,33 +77,7 @@ public class WardrobeAppService : OVOAppService, IWardrobeAppService
 
     public virtual async Task<GarmentDto> CreateAsync(CreateGarmentDto input)
     {
-        var isClean = await _aiPipeline.CheckNsfwAsync(input.OriginalImageUrl);
-        if (!isClean)
-        {
-            throw new UserFriendlyException("Bu görsel uygun bulunmadı.");
-        }
-
-        var processed = await _aiPipeline.ProcessGarmentImageAsync(input.OriginalImageUrl);
-
-        var garment = new Garment(
-            GuidGenerator.Create(),
-            CurrentUser.GetId(),
-            input.Category ?? processed.Category,
-            input.SubCategory ?? processed.SubCategory,
-            input.Color ?? processed.Color,
-            input.Pattern ?? processed.Pattern,
-            input.Seasons ?? processed.Seasons,
-            input.Formality ?? processed.Formality,
-            input.Visibility,
-            input.Source,
-            input.OriginalImageUrl,
-            processed.CutoutImageUrl,
-            input.Size,
-            input.Notes,
-            CurrentTenant.Id);
-
-        await _garmentRepository.InsertAsync(garment, autoSave: true);
-        return ObjectMapper.Map<Garment, GarmentDto>(garment);
+        return await CreateGarmentFromOriginalUrlAsync(GuidGenerator.Create(), input);
     }
 
     public virtual async Task<GarmentDto> UpdateAsync(Guid id, UpdateGarmentDto input)
@@ -160,26 +149,30 @@ public class WardrobeAppService : OVOAppService, IWardrobeAppService
             throw new UserFriendlyException("Bu site desteklenmiyor. Screenshot yükleyin.");
         }
 
-        return await CreateAsync(new CreateGarmentDto
-        {
-            OriginalImageUrl = imageUrl,
-            Source = GarmentSource.Url,
-            Visibility = input.Visibility,
-            Size = input.Size,
-            Notes = input.Notes
-        });
+        return await CreateGarmentFromOriginalUrlAsync(
+            GuidGenerator.Create(),
+            new CreateGarmentDto
+            {
+                OriginalImageUrl = imageUrl,
+                Source = GarmentSource.Url,
+                Visibility = input.Visibility,
+                Size = input.Size,
+                Notes = input.Notes
+            });
     }
 
     public virtual Task<GarmentDto> CreateFromPhotoAsync(CreateGarmentFromPhotoDto input)
     {
-        return CreateAsync(new CreateGarmentDto
-        {
-            OriginalImageUrl = input.ImageUrl,
-            Source = GarmentSource.Photo,
-            Visibility = input.Visibility,
-            Size = input.Size,
-            Notes = input.Notes
-        });
+        return CreateGarmentFromOriginalUrlAsync(
+            GuidGenerator.Create(),
+            new CreateGarmentDto
+            {
+                OriginalImageUrl = input.ImageUrl,
+                Source = GarmentSource.Photo,
+                Visibility = input.Visibility,
+                Size = input.Size,
+                Notes = input.Notes
+            });
     }
 
     public virtual async Task<GarmentAnalyzeResultDto> AnalyzeImageAsync(GarmentAnalyzeInputDto input)
@@ -228,6 +221,213 @@ public class WardrobeAppService : OVOAppService, IWardrobeAppService
                 $"Dolabının yaklaşık %{Math.Round(ratio * 100, 0).ToString(CultureInfo.InvariantCulture)}'i koyu tonlarda. Camel ve bej parçalar kombin çeşitliliğini artırır.",
             DarkGarmentRatio = Math.Round(ratio, 2)
         };
+    }
+
+    public virtual async Task<GarmentUploadPresignResultDto> GetGarmentImageUploadPresignAsync(
+        GarmentUploadPresignInputDto input)
+    {
+        var userId = CurrentUser.GetId();
+        var garmentId = GuidGenerator.Create();
+        var ext = WardrobeObjectKeyHelper.NormalizeExtension(input.FileExtension);
+        var bucket = string.IsNullOrWhiteSpace(_minioOptions.DefaultBucket)
+            ? OvoStorageBuckets.Media
+            : _minioOptions.DefaultBucket;
+        var objectKey = WardrobeObjectKeyHelper.BuildOriginalKey(userId, garmentId, ext);
+
+        await _objectStorage.EnsureBucketAsync(bucket);
+
+        var expiry = TimeSpan.FromSeconds(input.ExpirySeconds);
+        var uploadUrl = await _objectStorage.PresignedPutObjectAsync(bucket, objectKey, expiry);
+
+        return new GarmentUploadPresignResultDto
+        {
+            GarmentId = garmentId,
+            Bucket = bucket,
+            ObjectKey = objectKey,
+            UploadUrl = uploadUrl,
+            ExpiresAtUtc = DateTime.UtcNow.Add(expiry)
+        };
+    }
+
+    public virtual async Task<GarmentDto> CreateAfterGarmentImageUploadAsync(CreateGarmentAfterClientUploadDto input)
+    {
+        var userId = CurrentUser.GetId();
+        if (!WardrobeObjectKeyHelper.TryParseOriginalKey(input.ObjectKey, userId, out var keyGarmentId) ||
+            keyGarmentId != input.GarmentId)
+        {
+            throw new UserFriendlyException("ObjectKey ile GarmentId eşleşmiyor veya bu kullanıcıya ait değil.");
+        }
+
+        var bucket = string.IsNullOrWhiteSpace(input.BucketName)
+            ? _minioOptions.DefaultBucket
+            : input.BucketName!.Trim();
+
+        if (string.IsNullOrWhiteSpace(bucket))
+        {
+            throw new UserFriendlyException("Bucket adı yapılandırılmamış.");
+        }
+
+        if (await _garmentRepository.FindAsync(input.GarmentId) != null)
+        {
+            throw new UserFriendlyException("Bu kıyafet kaydı zaten oluşturulmuş.");
+        }
+
+        if (!await _objectStorage.ObjectExistsAsync(bucket, input.ObjectKey))
+        {
+            throw new UserFriendlyException("Yükleme bulunamadı. Önce presigned URL ile dosyayı yükleyin.");
+        }
+
+        var imageUrl = await ResolveImageUrlForPipelineAsync(bucket, input.ObjectKey, default);
+
+        var createDto = new CreateGarmentDto
+        {
+            OriginalImageUrl = imageUrl,
+            Source = input.Source,
+            Category = input.Category,
+            SubCategory = input.SubCategory,
+            Color = input.Color,
+            Pattern = input.Pattern,
+            Seasons = input.Seasons,
+            Formality = input.Formality,
+            Size = input.Size,
+            Visibility = input.Visibility,
+            Notes = input.Notes
+        };
+
+        return await CreateGarmentFromOriginalUrlAsync(input.GarmentId, createDto);
+    }
+
+    [RemoteService(IsEnabled = false)]
+    public virtual async Task<GarmentDto> CreateFromUploadStreamAsync(
+        Stream fileStream,
+        string fileName,
+        string? contentType,
+        long? contentLength,
+        CreateGarmentMultipartMetadataDto metadata,
+        CancellationToken cancellationToken = default)
+    {
+        Check.NotNull(fileStream, nameof(fileStream));
+        await _multipartMetadataValidator.ValidateAndThrowAsync(metadata, cancellationToken);
+
+        var ext = WardrobeObjectKeyHelper.NormalizeExtension(Path.GetExtension(fileName));
+        if (!WardrobeObjectKeyHelper.IsAllowedImageExtension(ext))
+        {
+            throw new UserFriendlyException("Desteklenen formatlar: JPG, PNG, WEBP.");
+        }
+
+        var userId = CurrentUser.GetId();
+        var garmentId = GuidGenerator.Create();
+        var bucket = string.IsNullOrWhiteSpace(_minioOptions.DefaultBucket)
+            ? OvoStorageBuckets.Media
+            : _minioOptions.DefaultBucket;
+        var objectKey = WardrobeObjectKeyHelper.BuildOriginalKey(userId, garmentId, ext);
+
+        var size = contentLength ?? (fileStream.CanSeek ? fileStream.Length : 0L);
+        if (size <= 0)
+        {
+            throw new UserFriendlyException("Dosya boyutu okunamadı veya sıfır.");
+        }
+
+        if (size > WardrobeUploadLimits.MaxImageBytes)
+        {
+            throw new UserFriendlyException("Dosya çok büyük (en fazla 20 MB).");
+        }
+
+        var resolvedContentType = string.IsNullOrWhiteSpace(contentType)
+            ? GuessContentType(ext)
+            : contentType!;
+
+        await _objectStorage.PutObjectAsync(
+            new ObjectPutRequest
+            {
+                BucketName = bucket,
+                ObjectKey = objectKey,
+                Content = fileStream,
+                ObjectSize = size,
+                ContentType = resolvedContentType
+            },
+            cancellationToken);
+
+        var imageUrl = await ResolveImageUrlForPipelineAsync(bucket, objectKey, cancellationToken);
+
+        var createDto = new CreateGarmentDto
+        {
+            OriginalImageUrl = imageUrl,
+            Source = metadata.Source,
+            Category = metadata.Category,
+            SubCategory = metadata.SubCategory,
+            Color = metadata.Color,
+            Pattern = metadata.Pattern,
+            Seasons = metadata.Seasons,
+            Formality = metadata.Formality,
+            Size = metadata.Size,
+            Visibility = metadata.Visibility,
+            Notes = metadata.Notes
+        };
+
+        return await CreateGarmentFromOriginalUrlAsync(garmentId, createDto);
+    }
+
+    private async Task<string> ResolveImageUrlForPipelineAsync(
+        string bucket,
+        string objectKey,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(_minioOptions.PublicReadBaseUrl))
+        {
+            var root = _minioOptions.PublicReadBaseUrl!.TrimEnd('/');
+            var key = objectKey.TrimStart('/');
+            return $"{root}/{key}";
+        }
+
+        var seconds = Math.Clamp(_minioOptions.GarmentImagePresignedReadExpirySeconds, 60, 86400);
+        return await _objectStorage.PresignedGetObjectAsync(
+            bucket,
+            objectKey,
+            TimeSpan.FromSeconds(seconds),
+            cancellationToken);
+    }
+
+    private static string GuessContentType(string extWithDot)
+    {
+        return extWithDot.ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private async Task<GarmentDto> CreateGarmentFromOriginalUrlAsync(Guid garmentId, CreateGarmentDto input)
+    {
+        var isClean = await _aiPipeline.CheckNsfwAsync(input.OriginalImageUrl);
+        if (!isClean)
+        {
+            throw new UserFriendlyException("Bu görsel uygun bulunmadı.");
+        }
+
+        var processed = await _aiPipeline.ProcessGarmentImageAsync(input.OriginalImageUrl);
+
+        var garment = new Garment(
+            garmentId,
+            CurrentUser.GetId(),
+            input.Category ?? processed.Category,
+            input.SubCategory ?? processed.SubCategory,
+            input.Color ?? processed.Color,
+            input.Pattern ?? processed.Pattern,
+            input.Seasons ?? processed.Seasons,
+            input.Formality ?? processed.Formality,
+            input.Visibility,
+            input.Source,
+            input.OriginalImageUrl,
+            processed.CutoutImageUrl,
+            input.Size,
+            input.Notes,
+            CurrentTenant.Id);
+
+        await _garmentRepository.InsertAsync(garment, autoSave: true);
+        return ObjectMapper.Map<Garment, GarmentDto>(garment);
     }
 
     private static IQueryable<Garment> ApplySorting(IQueryable<Garment> query, string? sorting)

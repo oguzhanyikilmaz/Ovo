@@ -1,6 +1,8 @@
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OVO.AiPipeline;
+using OVO.FileStorage;
 using OVO.Wardrobe;
 using Volo.Abp.Account;
 using Volo.Abp.FeatureManagement;
@@ -29,6 +31,26 @@ public class OVOApplicationModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var configuration = context.Services.GetConfiguration();
+        context.Services.Configure<MinioStorageOptions>(
+            configuration.GetSection(MinioStorageOptions.SectionName));
+
+        var minio = configuration.GetSection(MinioStorageOptions.SectionName).Get<MinioStorageOptions>()
+                    ?? new MinioStorageOptions();
+        var useMinio = minio.Enabled
+                       && !string.IsNullOrWhiteSpace(minio.Endpoint)
+                       && !string.IsNullOrWhiteSpace(minio.AccessKey)
+                       && !string.IsNullOrWhiteSpace(minio.SecretKey);
+
+        if (useMinio)
+        {
+            context.Services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
+        }
+        else
+        {
+            context.Services.AddSingleton<IObjectStorageService, DisabledObjectStorageService>();
+        }
+
         context.Services.AddMapperlyObjectMapper<OVOApplicationModule>();
         context.Services.AddTransient<IAiPipelineService, NullAiPipelineService>();
         context.Services.AddValidatorsFromAssemblyContaining<CreateGarmentDtoValidator>();
