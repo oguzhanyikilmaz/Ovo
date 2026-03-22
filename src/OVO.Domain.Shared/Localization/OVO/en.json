@@ -1,0 +1,18 @@
+{
+  "culture": "en",
+  "texts": {
+    "AppName": "OVO",
+    "Menu:Home": "Home",
+    "Welcome": "Welcome",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io.",
+    "Permission:Wardrobe": "Wardrobe",
+    "Permission:Profile": "Profile",
+    "Permission:Outfits": "Outfits",
+    "Permission:Trends": "Trends",
+    "Permission:Community": "Community",
+    "Permission:Social": "Social",
+    "Permission:TryOn": "Try-On",
+    "Permission:Wishlist": "Wishlist",
+    "Permission:Reports": "Reports"
+  }
+}

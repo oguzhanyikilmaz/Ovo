@@ -1,0 +1,18 @@
+{
+  "culture": "tr",
+  "texts": {
+    "AppName": "OVO",
+    "Menu:Home": "Ana sayfa",
+    "Welcome": "Hoşgeldiniz",
+    "LongWelcomeMessage": "Uygulamaya hoşgeldiniz. Bu, ABP framework'ü üzerine bina edilmiş bir başlangıç projesidir. Daha fazla bilgi için abp.io adresini ziyaret edebilirsiniz.",
+    "Permission:Wardrobe": "Dolap",
+    "Permission:Profile": "Profil",
+    "Permission:Outfits": "Kombinler",
+    "Permission:Trends": "Trendler",
+    "Permission:Community": "Topluluk",
+    "Permission:Social": "Sosyal",
+    "Permission:TryOn": "Try-On",
+    "Permission:Wishlist": "Favoriler",
+    "Permission:Reports": "Raporlar"
+  }
+}

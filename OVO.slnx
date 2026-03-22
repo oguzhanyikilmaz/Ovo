@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OVO.Application.Contracts/OVO.Application.Contracts.csproj" />
+    <Project Path="src/OVO.Application/OVO.Application.csproj" />
+    <Project Path="src/OVO.DbMigrator/OVO.DbMigrator.csproj" />
+    <Project Path="src/OVO.Domain.Shared/OVO.Domain.Shared.csproj" />
+    <Project Path="src/OVO.Domain/OVO.Domain.csproj" />
+    <Project Path="src/OVO.EntityFrameworkCore/OVO.EntityFrameworkCore.csproj" />
+    <Project Path="src/OVO.HttpApi.Client/OVO.HttpApi.Client.csproj" />
+    <Project Path="src/OVO.HttpApi/OVO.HttpApi.csproj" />
+    <Project Path="src/OVO.Web/OVO.Web.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/OVO.Application.Tests/OVO.Application.Tests.csproj" />
+    <Project Path="test/OVO.Domain.Tests/OVO.Domain.Tests.csproj" />
+    <Project Path="test/OVO.EntityFrameworkCore.Tests/OVO.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="test/OVO.HttpApi.Client.ConsoleTestApp/OVO.HttpApi.Client.ConsoleTestApp.csproj" />
+    <Project Path="test/OVO.TestBase/OVO.TestBase.csproj" />
+    <Project Path="test/OVO.Web.Tests/OVO.Web.Tests.csproj" />
+  </Folder>
+</Solution>

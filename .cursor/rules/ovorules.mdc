@@ -1,0 +1,332 @@
+---
+alwaysApply: true
+---
+## 🏗️ BACKEND — ABP.io KURALLARI
+
+### Genel
+- ABP.io modüler mimarisini **kesinlikle bozma**. Her özellik kendi modülünde olsun.
+- Domain katmanında: Entity, Repository interface, Domain Service
+- Application katmanında: AppService, DTO, IAppService interface
+- HttpApi katmanında: Controller (sadece route + yetki, iş mantığı yok)
+- İş mantığı **asla** Controller'da olmaz.
+
+### Entity Tasarımı
+- Tüm entity'ler `FullAuditedAggregateRoot<Guid>` veya `AuditedEntity<Guid>` kalıt alır
+- Soft delete için `ISoftDelete` interface'i kullan
+- Para, fiyat alanları için `decimal`, görsel URL için `string`, koordinat için `double`
+- Her entity için ayrı `IRepository<TEntity, Guid>` interface tanımla
+
+### DTO Kuralları
+- Input DTO'lar: `CreateUpdateXxxDto`, `GetListXxxInput`
+- Output DTO'lar: `XxxDto`, `XxxListItemDto`
+- AutoMapper profili için `OvoApplicationAutoMapperProfile` kullan
+- DTO'larda FluentValidation kullan, DataAnnotation değil
+
+### Application Service Kuralları
+- Her servis `ApplicationService` base'inden kalıt alır
+- `[Authorize]` attribute'u policy bazlı kullan
+- Return tipi her zaman `Task<T>` (async/await)
+- Exception fırlat: `UserFriendlyException` (kullanıcıya gösterilecek), `BusinessException` (log'lanacak)
+
+### API Controller Kuralları
+- Route: `/api/app/[controller]` (ABP convention)
+- HTTP method attribute: `[HttpGet]`, `[HttpPost]` vb.
+- Swagger için `[ApiExplorerSettings]` ve XML comment ekle
+- Rate limiting için ABP'nin built-in throttling'ini kullan
+
+### Veritabanı / EF Core
+- Migration'lar her zaman `Ovo.EntityFrameworkCore` projesinde
+- Fluent API konfigürasyonu `OvoDbContext.OnModelCreating`'de
+- Index: sık sorgulanan alanlar için (`kombin_hash`, `kullanici_id`, `created_at`)
+- Soft delete filtresi ABP tarafından otomatik — ekstra `where IsDeleted = false` yazma
+
+### Güvenlik
+- JWT token: ABP Identity Server
+- Permission tanımları `OvoPermissions` static class'ta
+- Admin MVC: sadece admin rolü erişebilir, cookie auth
+
+---
+
+## 📱 MOBILE — REACT NATIVE KURALLARI
+
+### Genel
+- Expo kullan (bare workflow değil managed workflow öncelikli)
+- TypeScript — `any` tipi **yasak**, her zaman proper type yaz
+- Functional component + hooks — class component **yasak**
+- Her screen kendi klasöründe: `screens/ScreenName/index.tsx` + `styles.ts`
+
+### Klasör Yapısı
+```
+src/
+├── screens/          # Her sekme/ekran
+├── components/       # Ortak bileşenler
+│   ├── ui/           # Atomic: Button, Input, Card...
+│   └── features/     # Feature-specific: GarmentCard, OutfitCarousel...
+├── services/         # API katmanı (axios instance'ları)
+├── store/            # State (Zustand tercih edilir)
+├── hooks/            # Custom hooks
+├── utils/            # Yardımcı fonksiyonlar
+├── types/            # Global TypeScript tipleri
+├── constants/        # Renkler, boyutlar, endpoint'ler
+└── navigation/       # React Navigation config
+```
+
+### State Yönetimi
+- **Zustand** kullan (Redux değil — projenin scope'u için yeterli)
+- Store'lar: `useAuthStore`, `useWardrobeStore`, `useOutfitStore`, `useTryOnStore`
+- Server state için **React Query (TanStack Query)** kullan
+- Form state için **React Hook Form** kullan
+
+### API İletişimi
+```typescript
+// services/api.ts — axios instance
+// services/auth.service.ts
+// services/wardrobe.service.ts
+// services/tryon.service.ts
+// vb.
+```
+- Base URL `.env` dosyasından al
+- Her request'e JWT token interceptor ekle
+- Error handling: 401 → logout, 429 → "Limit doldu" toast, 5xx → "Sunucu hatası" toast
+
+### Navigasyon
+- React Navigation v6
+- Bottom Tab Navigator: 4 sekme (Kombinlerim, Topluluk, Try-On, Dolabım)
+- Try-On sekmesi ortada, diğerlerinden büyük ikon
+- Üye olmayan kullanıcı: Topluluk feed görünür, diğer sekmelerde "Giriş yap" banner
+
+### UI/UX Kuralları
+- Renk paleti: siyah ağırlıklı, minimal, moda odaklı
+- Font: `Inter` veya `Poppins` (tutarlı kullan)
+- Spacing: 4'ün katları (4, 8, 12, 16, 24, 32)
+- Görsel yükleme: `expo-image` (cache + progressive loading)
+- Loading state: her async işlem için skeleton veya spinner
+- Hata state: toast + retry butonu
+- Boş state: açıklayıcı ikon + CTA butonu
+
+### Performans
+- Listeler için `FlashList` kullan (`FlatList` değil)
+- Görsel: `expo-image` ile lazy load + cache
+- Sonsuz scroll: React Query'nin `useInfiniteQuery`
+- Memoization: sadece gerçekten gerektiğinde `useMemo`/`useCallback`
+
+### Kıyafet Ekleme Akışı (Kritik)
+1. Görsel al → `expo-image-picker` veya `expo-camera`
+2. API'ye gönder (multipart/form-data)
+3. Polling veya WebSocket ile AI işlem durumunu takip et
+4. Form doldur (AI pre-fill + kullanıcı düzeltme)
+5. Kaydet
+
+### Try-On Akışı (Kritik)
+1. Fotoğraf yükleme: `expo-image-picker` çoklu seçim (max 15)
+2. Kalite göstergesi: dosya sayısına göre renk (sarı/yeşil)
+3. Studio foto kontrolü: daha önce oluşturulduysa göster, yoksa oluştur
+4. Kıyafet seçimi: Dolabım / URL / Foto sekmeler
+5. 3 parça kontrolü: eksik varsa otomatik tamamlama popup
+6. Hash üret → cache kontrol → render
+7. Sonuç: kaydet / paylaş / oyla
+
+---
+
+## 🤖 AI PIPELINE — BANANA PRO KURALLARI
+
+### Genel
+- Banana Pro API key `.env`'de, **asla** koda gömme
+- Her AI çağrısı backend'den yapılır — mobile client Banana Pro'ya **direkt bağlanmaz**
+- Timeout: Studio foto için 30sn, render için 20sn, diğerleri için 10sn
+
+### İşlem Sırası (Kıyafet Ekleme)
+```
+1. NSFW Kontrolü  (< 1sn) → fail → hata dön
+2. Arka Plan Kaldırma (1-2sn) → transparan PNG kaydet
+3. Otomatik Etiketleme (1sn) → JSON: {type, subType, color, pattern, season, formality}
+```
+
+### Studio Foto
+- Kullanıcı başına **1 kez** oluşturulur, DB'ye kaydedilir
+- Fotoğraflar değişince yeniden oluştur
+- Prompt: "full body, white background, natural standing pose, studio lighting, fashion model"
+
+### Try-On Render
+- Hash: `SHA256(user_id + garment_ids.sort().join(','))` 
+- Cache hit → render_cache tablosundan URL dön (hak harcanmaz)
+- Cache miss → Banana Pro → sonucu hem göster hem cache'e yaz
+- Başarısız → 10sn bekle → 1x retry → yine başarısız → kullanıcıya "Tekrar dene"
+
+### Görsel Depolama
+- Orijinal fotoğraf: `users/{userId}/photos/{uuid}.jpg`
+- Studio foto: `users/{userId}/studio.jpg`
+- Kıyafet görseli: `garments/{garmentId}/original.jpg` + `garments/{garmentId}/cutout.png`
+- Render sonucu: `renders/{hash}.jpg`
+
+---
+
+## 🔐 GÜVENLİK KURALLARI
+
+- JWT token: `Authorization: Bearer {token}` header'ı
+- Refresh token: 30 günlük, secure storage'da sakla (`expo-secure-store`)
+- SMS OTP: 3 yanlış → 15 dk blok, bunu backend'de uygula
+- KVKK/GDPR: hesap silme 30 gün soft delete, veri export JSON e-posta
+- Engelleme: her query'de karşılıklı kontrol et
+
+---
+
+## 🗄️ VERİTABANI KURALLARI
+
+### İndeksler (performans için kritik)
+```sql
+users: email (unique), phone (unique)
+garments: user_id, kategori, mevsim, formalite
+outfits: user_id, kombin_hash (unique)
+render_cache: kombin_hash (unique, primary key)
+polls: created_at DESC, toplam_oy DESC
+votes: (oylama_id, kullanici_id) UNIQUE
+follows: (takip_eden, takip_edilen) UNIQUE
+blocks: (engelleyen, engellenen) UNIQUE
+```
+
+### Sorgu Kuralları
+- N+1 sorgu yasak: `Include()` veya ayrı bulk sorgu kullan
+- Sayfalama: her liste endpoint'i cursor-based veya offset pagination desteklemeli
+- Büyük listeler: max 20 item per sayfa (varsayılan)
+
+---
+
+## 🚫 YAPILMAMASI GEREKENLER
+
+1. ❌ İş mantığını Controller'a yazma
+2. ❌ Mobile'da Banana Pro API'ye direkt bağlanma
+3. ❌ `any` tipi kullanma (TypeScript)
+4. ❌ Async/await olmadan Promise kullanma
+5. ❌ Hardcoded URL, key veya secret
+6. ❌ Class component yazma (React Native)
+7. ❌ `FlatList` yerine `ScrollView` içinde liste oluşturma
+8. ❌ Global state'e sunucu datasını koyma (React Query var)
+9. ❌ Migration olmadan DB değişikliği yapma
+10. ❌ `console.log` bırakma (production build'de temizle)
+
+---
+
+## ✅ STANDART KOD PATTERNS
+
+### Backend — AppService
+```csharp
+public class WardrobeAppService : OvoAppService, IWardrobeAppService
+{
+    private readonly IRepository<Garment, Guid> _garmentRepository;
+    private readonly IAiPipelineService _aiPipeline;
+
+    public WardrobeAppService(
+        IRepository<Garment, Guid> garmentRepository,
+        IAiPipelineService aiPipeline)
+    {
+        _garmentRepository = garmentRepository;
+        _aiPipeline = aiPipeline;
+    }
+
+    [Authorize(OvoPermissions.Wardrobe.Default)]
+    public async Task<GarmentDto> AddGarmentAsync(CreateGarmentInput input)
+    {
+        // 1. NSFW kontrol
+        var isClean = await _aiPipeline.CheckNsfwAsync(input.ImageUrl);
+        if (!isClean) throw new UserFriendlyException("Bu görsel uygun bulunmadı.");
+
+        // 2. BG kaldır + etiketle
+        var processed = await _aiPipeline.ProcessGarmentImageAsync(input.ImageUrl);
+
+        // 3. Entity oluştur
+        var garment = new Garment(GuidGenerator.Create(), CurrentUser.Id!.Value)
+        {
+            Category = processed.Category,
+            SubCategory = processed.SubCategory,
+            // ...
+        };
+
+        await _garmentRepository.InsertAsync(garment, autoSave: true);
+        return ObjectMapper.Map<Garment, GarmentDto>(garment);
+    }
+}
+```
+
+### Mobile — Custom Hook
+```typescript
+// hooks/useWardrobe.ts
+export const useWardrobe = () => {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['wardrobe'],
+    queryFn: () => WardrobeService.getAll(),
+    staleTime: 5 * 60 * 1000, // 5 dk
+  });
+
+  const addGarment = useMutation({
+    mutationFn: WardrobeService.addGarment,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wardrobe'] }),
+    onError: (err) => toast.error(err.message),
+  });
+
+  return { garments: data, isLoading, error, refetch, addGarment };
+};
+```
+
+### Mobile — Service
+```typescript
+// services/wardrobe.service.ts
+class WardrobeService {
+  async getAll(filter?: WardrobeFilter): Promise<GarmentListDto> {
+    const { data } = await api.get('/wardrobe', { params: filter });
+    return data;
+  }
+
+  async addGarment(input: CreateGarmentInput): Promise<GarmentDto> {
+    const formData = new FormData();
+    formData.append('image', { uri: input.imageUri, type: 'image/jpeg', name: 'garment.jpg' } as any);
+    const { data } = await api.post('/wardrobe/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  }
+}
+
+export default new WardrobeService();
+```
+
+---
+
+## 📋 DOSYA OLUŞTURMA KURALLARI
+
+Yeni bir özellik eklerken bu sırayı takip et:
+
+**Backend:**
+1. `Domain/Entities/` → Entity
+2. `Domain/Repositories/` → IRepository interface
+3. `Application.Contracts/` → DTO'lar + IAppService
+4. `Application/` → AppService implementasyonu
+5. `EntityFrameworkCore/` → DbSet + Fluent config
+6. `HttpApi/Controllers/` → Controller
+7. Migration oluştur
+
+**Mobile:**
+1. `types/` → TypeScript tipleri
+2. `services/` → API service
+3. `store/` → Zustand store (gerekiyorsa)
+4. `hooks/` → Custom hook
+5. `components/` → UI bileşenleri
+6. `screens/` → Screen bileşeni
+
+---
+
+## 🌍 LOKALIZASYON
+
+- Uygulama Türkçe (birincil dil)
+- i18n altyapısı hazır olsun ama şimdilik sadece TR
+- Hata mesajları ve UI metinleri `constants/strings.ts`'de
+
+---
+
+## 🧪 TEST YAZMA KURALLARI
+
+- Backend: xUnit + ABP test base class'ları
+- Mobile: Jest + React Native Testing Library
+- Her AppService için unit test yaz
+- Try-On render flow için entegrasyon testi yaz
+- CI'da tüm testler geçmeden merge edilemez
