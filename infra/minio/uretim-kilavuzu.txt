@@ -1,0 +1,75 @@
+OVO — MinIO üretim: CORS, PublicReadBaseUrl, presigned stratejisi
+================================================================
+
+1) Üç farklı “okuma” senaryosu
+------------------------------
+A) PublicReadBaseUrl + herkese açık okuma (veya CDN)
+   - Uygulama: Minio:PublicReadBaseUrl = "https://cdn.alanadiniz.com/ovo-media"
+   - Wardrobe AI URL’si: {PublicReadBaseUrl}/{objectKey}  (bucket köke dahil edilmişse objectKey başında bucket tekrarlamayın)
+   - Gereksinim: Bucket/policy veya CDN’de GET herkese açık (sadece tahmin edilemeyen object key’ler = “security through obscurity”; hassas içerik için B veya C).
+
+B) Private bucket + sadece presigned GET (backend üretir)
+   - PublicReadBaseUrl boş bırakılır.
+   - Wardrobe: GarmentImagePresignedReadExpirySeconds (örn. 300–3600 sn) ile AI’ya geçici URL.
+   - Mobil/web görüntüleme: ya yine presigned GET (API’den kısa süreli) ya da kendi CDN imzanız.
+
+C) Hibrit
+   - Thumbnail/public görseller CDN (A), kullanıcı fotoğrafları presigned (B).
+
+
+2) CORS nerede ve neden?
+------------------------
+CORS yalnızca TARAYICI (web) ve bazı hybrid mobil webview senaryolarında gerekir.
+- Presigned PUT: istemci tarayıcıdan doğrudan MinIO/S3 endpoint’ine PUT atıyorsa, MinIO’nun CORS’u bu origin’e izin vermeli.
+- React Native saf native: genelde CORS yok (HTTP istemci doğrudan); yine de presigned PUT kullanıyorsanız sunucu TLS ve URL’nin erişilebilir olması yeterli.
+
+ASP.NET (OVO.Web) CORS’u MinIO presigned trafiğini çözmez; presigned istekler istemciden MinIO’ya gider.
+
+
+3) MinIO’da CORS ayarlama (özet)
+--------------------------------
+Yöntem 1 — Sunucu geneli (Docker / env):
+  MINIO_API_CORS_ALLOW_ORIGIN=https://app.sizin.com,https://admin.sizin.com
+  (Geliştirme: http://localhost:8081 gibi Expo web origin’i ekleyin. Prod’da * kullanmayın.)
+
+Yöntem 2 — Bucket CORS (S3 uyumlu XML):
+  mc alias set local http://minio:9000 ACCESS SECRET
+  mc cors set cors-s3-example.xml local/ovo-media
+
+cors-s3-example.xml dosyasını kendi origin listenize göre düzenleyin.
+
+
+4) PublicReadBaseUrl nasıl yazılmalı?
+-------------------------------------
+- Köke bucket path’i dahil edecekseniz:
+    PublicReadBaseUrl = "https://files.example.com/ovo-media"
+  Kod: URL = PublicReadBaseUrl + "/" + objectKey   (objectKey içinde bucket tekrar etmesin)
+
+- Virtual-hosted style kullanıyorsanız (bucket alt alan adı):
+    PublicReadBaseUrl = "https://ovo-media.files.example.com"
+  objectKey yine "users/..." ile başlamalı; bucket host’ta olduğu için doğru.
+
+
+5) Presigned süreleri (OVO)
+---------------------------
+- FileStorage presigned PUT/GET: uygulama en fazla 7 güne kadar kısıtlar (MinIO SDK ile uyum).
+- Wardrobe AI (PublicReadBaseUrl yokken): GarmentImagePresignedReadExpirySeconds (60–86400 sn).
+  Uzun süre: AI işlem + retry için yeterli; kısa süre: sızıntı penceresini küçültür.
+
+
+6) Kontrol listesi (prod)
+-------------------------
+[ ] Secret’lar yalnızca appsettings.secrets.json / vault’ta; repo’da yok.
+[ ] MinIO TLS, güçlü erişim anahtarı, mümkünse ayrı “app” kullanıcısı (sadece gerekli bucket).
+[ ] Bucket policy: public read yalnızca bilinçli seçildiyse (A senaryosu).
+[ ] CORS origin listesi: gerçek mobil/web origin’leri; * yok.
+[ ] CDN kullanılıyorsa cache kuralları (presigned URL cache’lenmemeli).
+
+
+7) Hızlı karar tablosu
+----------------------
+| İstemci        | Yükleme        | Okuma / AI URL        | CORS (MinIO)     |
+|----------------|----------------|------------------------|------------------|
+| RN + presigned | PUT → MinIO    | Public URL veya presign| Genelde gerekmez |
+| Web + presigned| PUT → MinIO    | presign veya public    | Gerekli          |
+| RN + multipart | POST → API     | sunucu karar verir     | API CORS ayrı    |

@@ -1,6 +1,8 @@
+using System;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OVO.AiPipeline;
 using OVO.FileStorage;
 using OVO.Wardrobe;
@@ -52,7 +54,24 @@ public class OVOApplicationModule : AbpModule
         }
 
         context.Services.AddMapperlyObjectMapper<OVOApplicationModule>();
-        context.Services.AddTransient<IAiPipelineService, NullAiPipelineService>();
+
+        context.Services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
+        var gemini = configuration.GetSection(GeminiOptions.SectionName).Get<GeminiOptions>() ?? new GeminiOptions();
+        if (!string.IsNullOrWhiteSpace(gemini.ApiKey))
+        {
+            context.Services.AddHttpClient(GeminiAiPipelineService.HttpClientName)
+                .ConfigureHttpClient((sp, client) =>
+                {
+                    var o = sp.GetRequiredService<IOptions<GeminiOptions>>().Value;
+                    client.Timeout = TimeSpan.FromSeconds(Math.Max(30, o.HttpClientTimeoutSeconds));
+                });
+            context.Services.AddTransient<IAiPipelineService, GeminiAiPipelineService>();
+        }
+        else
+        {
+            context.Services.AddTransient<IAiPipelineService, NullAiPipelineService>();
+        }
+
         context.Services.AddValidatorsFromAssemblyContaining<CreateGarmentDtoValidator>();
     }
 }

@@ -1,0 +1,50 @@
+import { StyleSheet } from 'react-native';
+import { colors } from '@/constants/colors';
+
+export const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
+  weather: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  weatherTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  weatherSub: { color: colors.textMuted, fontSize: 14, marginTop: 6 },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  outfitCard: {
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 160,
+    justifyContent: 'center',
+  },
+  outfitMeta: { color: colors.textMuted, fontSize: 13, marginTop: 8 },
+  colorsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16 },
+  colorDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorLabel: { color: colors.text, fontSize: 10, fontWeight: '600' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  muted: { color: colors.textMuted, textAlign: 'center' },
+});

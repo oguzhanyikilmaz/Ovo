@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -74,6 +74,7 @@ public class OpenIddictDataSeedContributor : IDataSeedContributor, ITransientDep
             OpenIddictConstants.Permissions.Scopes.Phone,
             OpenIddictConstants.Permissions.Scopes.Profile,
             OpenIddictConstants.Permissions.Scopes.Roles,
+            OpenIddictConstants.Scopes.OfflineAccess,
             "OVO"
         };
 
@@ -124,6 +125,24 @@ public class OpenIddictDataSeedContributor : IDataSeedContributor, ITransientDep
                 scopes: commonScopes,
                 redirectUri: $"{swaggerRootUrl}/swagger/oauth2-redirect.html",
                 clientUri: swaggerRootUrl
+            );
+        }
+
+        // Mobil / konsol API istemcisi (resource owner password + refresh)
+        var appClientId = configurationSection["OVO_App:ClientId"];
+        if (!appClientId.IsNullOrWhiteSpace())
+        {
+            await CreateApplicationAsync(
+                name: appClientId!,
+                type: OpenIddictConstants.ClientTypes.Confidential,
+                consentType: OpenIddictConstants.ConsentTypes.Implicit,
+                displayName: "OVO Mobile / API App",
+                secret: configurationSection["OVO_App:ClientSecret"] ?? "1q2w3e*",
+                grantTypes: new List<string> {
+                    OpenIddictConstants.GrantTypes.Password,
+                    OpenIddictConstants.GrantTypes.RefreshToken
+                },
+                scopes: commonScopes
             );
         }
     }

@@ -27,6 +27,7 @@ alwaysApply: true
 - `[Authorize]` attribute'u policy bazlı kullan
 - Return tipi her zaman `Task<T>` (async/await)
 - Exception fırlat: `UserFriendlyException` (kullanıcıya gösterilecek), `BusinessException` (log'lanacak)
+- Her kodlanan methoda summary ekleyip methodun ne işe yaradığını türkçe yaz.
 
 ### API Controller Kuralları
 - Route: `/api/app/[controller]` (ABP convention)

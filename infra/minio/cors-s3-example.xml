@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <!-- mc cors set cors-s3-example.xml ALIAS/ovo-media -->
+  <!-- AllowedOrigin değerlerini kendi web uygulamanızla değiştirin; * kullanmayın. -->
+  <CORSRule>
+    <AllowedOrigin>https://app.ornek.com</AllowedOrigin>
+    <AllowedOrigin>https://localhost:44349</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedMethod>PUT</AllowedMethod>
+    <AllowedMethod>POST</AllowedMethod>
+    <AllowedMethod>HEAD</AllowedMethod>
+    <AllowedMethod>DELETE</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+    <ExposeHeader>x-amz-request-id</ExposeHeader>
+    <MaxAgeSeconds>3600</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>

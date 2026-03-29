@@ -3,6 +3,7 @@
   "texts": {
     "AppName": "OVO",
     "Menu:Home": "Ana sayfa",
+    "Menu:Swagger": "API (Swagger)",
     "Welcome": "Hoşgeldiniz",
     "LongWelcomeMessage": "Uygulamaya hoşgeldiniz. Bu, ABP framework'ü üzerine bina edilmiş bir başlangıç projesidir. Daha fazla bilgi için abp.io adresini ziyaret edebilirsiniz.",
     "Permission:Wardrobe": "Dolap",

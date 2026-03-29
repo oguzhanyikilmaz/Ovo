@@ -17,4 +17,6 @@ public static class OVODomainErrorCodes
     public const string ObjectStorageNotConfigured = "OVO:ObjectStorageNotConfigured";
 
     public const string ObjectStorageOperationFailed = "OVO:ObjectStorageOperationFailed";
+
+    public const string GeminiApiError = "OVO:GeminiApiError";
 }

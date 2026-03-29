@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using OVO.Localization;
 using OVO.MultiTenancy;
 using Volo.Abp.Identity.Web.Navigation;
@@ -34,13 +34,19 @@ public class OVOMenuContributor : IMenuContributor
             )
         );
 
+        context.Menu.AddItem(
+            new ApplicationMenuItem(
+                OVOMenus.Swagger,
+                l["Menu:Swagger"],
+                "/swagger",
+                icon: "fa fa-book",
+                order: 100
+            )
+        );
+
         if (MultiTenancyConsts.IsEnabled)
         {
             administration.SetSubItemOrder(TenantManagementMenuNames.GroupName, 1);
-        }
-        else
-        {
-            administration.TryRemoveMenuItem(TenantManagementMenuNames.GroupName);
         }
 
         administration.SetSubItemOrder(IdentityMenuNames.GroupName, 2);

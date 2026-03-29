@@ -1,5 +1,9 @@
 namespace OVO.FileStorage;
 
+/// <summary>
+/// MinIO / S3 uyumlu depolama. Üretimde CORS ve public URL stratejisi için
+/// repodaki <c>infra/minio/uretim-kilavuzu.txt</c> dosyasına bakın.
+/// </summary>
 public class MinioStorageOptions
 {
     public const string SectionName = "Minio";
@@ -24,12 +28,19 @@ public class MinioStorageOptions
     public string DefaultBucket { get; set; } = OvoStorageBuckets.Media;
 
     /// <summary>
-    /// Kıyafet görseli için harici erişim kökü (bucket yolu dahil edilebilir).
-    /// Örn. https://cdn.ornek.com/ovo-media — URL = kök + "/" + objectKey.
-    /// Boşsa Banana/AI için presigned GET kullanılır.
+    /// <para><b>Strateji A — Genel okuma URL’si (CDN veya public bucket):</b>
+    /// Dolu bırakın. Wardrobe (ve ileride diğer modüller) AI / harici HTTP için
+    /// <c>{PublicReadBaseUrl}/{objectKey}</c> kullanır. Köke bucket yolunu dahil edin
+    /// (örn. <c>https://cdn.sizin.com/ovo-media</c>); <c>objectKey</c> bucket adı içermemelidir.</para>
+    /// <para><b>Strateji B — Tamamen private bucket:</b> Boş bırakın; uygulama geçici
+    /// <b>presigned GET</b> üretir (<see cref="GarmentImagePresignedReadExpirySeconds"/>).</para>
     /// </summary>
     public string? PublicReadBaseUrl { get; set; }
 
-    /// <summary>Public URL yokken görseli AI servisine vermek için presigned GET süresi (sn).</summary>
+    /// <summary>
+    /// <see cref="PublicReadBaseUrl"/> boşken kıyafet görseli için AI pipeline’a verilen
+    /// presigned GET süresi (saniye, 60–86400). Kısa = daha dar güvenlik penceresi;
+    /// uzun = yavaş AI / retry toleransı.
+    /// </summary>
     public int GarmentImagePresignedReadExpirySeconds { get; set; } = 3600;
 }

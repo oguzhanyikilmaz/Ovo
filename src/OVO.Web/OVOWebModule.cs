@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ using OVO.Localization;
 using OVO.MultiTenancy;
 using OVO.Web.Menus;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Server;
 using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.Account.Web;
@@ -19,6 +21,7 @@ using Volo.Abp.AspNetCore.Mvc.Localization;
 using Volo.Abp.AspNetCore.Mvc.UI;
 using Volo.Abp.AspNetCore.Mvc.UI.Bootstrap;
 using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
+using Volo.Abp.AspNetCore.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
@@ -85,6 +88,16 @@ public class OVOWebModule : AbpModule
             });
         });
 
+        // Mobil / yerel HTTP (127.0.0.1:5059) ile token; yalnızca Development. Üretimde asla kapatma.
+        if (hostingEnvironment.IsDevelopment())
+        {
+            PreConfigure<OpenIddictServerBuilder>(serverBuilder =>
+            {
+                serverBuilder.UseAspNetCore()
+                    .DisableTransportSecurityRequirement();
+            });
+        }
+
         if (!hostingEnvironment.IsDevelopment())
         {
             PreConfigure<AbpOpenIddictAspNetCoreOptions>(options =>
@@ -105,6 +118,7 @@ public class OVOWebModule : AbpModule
         var configuration = context.Services.GetConfiguration();
 
         ConfigureAuthentication(context);
+        ConfigureMultiTenancyCookieIsolation(context);
         ConfigureUrls(configuration);
         ConfigureBundles();
         ConfigureVirtualFileSystem(hostingEnvironment);
@@ -122,6 +136,24 @@ public class OVOWebModule : AbpModule
         {
             options.IsDynamicClaimsEnabled = true;
         });
+    }
+
+    /// <summary>
+    /// localhost üzerinde başka bir ABP uygulamasıyla çerez çakışmasını azaltır:
+    /// kiracı anahtarı ve Data Protection uygulama adı OVO'ya özel olur.
+    /// </summary>
+    private void ConfigureMultiTenancyCookieIsolation(ServiceConfigurationContext context)
+    {
+        if (MultiTenancyConsts.IsEnabled)
+        {
+            Configure<AbpAspNetCoreMultiTenancyOptions>(options =>
+            {
+                options.TenantKey = "__ovo_tenant";
+            });
+
+            context.Services.AddDataProtection()
+                .SetApplicationName("OVO");
+        }
     }
 
     private void ConfigureUrls(IConfiguration configuration)

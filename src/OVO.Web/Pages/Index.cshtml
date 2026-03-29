@@ -1,60 +1,40 @@
 @page
-<div class="row mb-3">
-    <div class="col-xl-6 col-12 d-flex">
-        <div class="card h-lg-100 w-100 overflow-hidden">
-            <div class="card-body">
-                <div class="starting-content">
-                    <h3>Getting Started</h3>
-                    <p class="lead text-muted mb-2">Learn how to create and run a new web application using the application startup template.</p>
-                    <a href="https://docs.abp.io/en/commercial/latest/getting-started" class="btn btn-brand mb-4" target="_blank">Getting Started</a>
+@{
+    ViewBag.Title = "OVO";
+}
 
-                    <h4>Web Application Development Tutorial</h4>
-                    <p class="text-muted mb-2">Learn how to build an ABP based web application named Acme.BookStore.</p>
-                    <a href="https://docs.abp.io/en/commercial/latest/tutorials/book-store/part-1?UI=MVC&DB=EF" class="btn btn-primary soft mb-4" target="_blank">Explore Tutorial</a>
-
-                    <h4>Customize Lepton Theme</h4>
-                    <p class="text-muted mb-2">Learn how to customize LeptonX Theme as you wish.</p>
-                    <a href="https://docs.abp.io/en/commercial/latest/themes/lepton/customizing-lepton-theme" class="btn btn-primary soft mb-5 mb-xl-0" target="_blank">Customize Lepton</a>
-                </div>
-                <img class="card-bg-image" src="/images/getting-started/bg-01.png">
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="mb-3">OVO</h1>
+            <p class="lead text-muted">
+                Kombin, dolap ve sanal deneme için backend API ve yönetim (ABP). Mobil istemci bu sunucudaki REST uçlarına bağlanır.
+            </p>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <a class="btn btn-primary" href="/Account/Login">Giriş yap</a>
+                <a class="btn btn-outline-primary" href="/swagger">API (Swagger)</a>
             </div>
-        </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6 d-flex">
-        <div class="row">
-            <div class="col-12 d-flex">
-                <div class="card overflow-hidden">
-                    <div class="card-body pb-0">
-                        <div class="abp-support abp-logo mb-2"></div>
-                        <p class="text-muted mb-2">You can check for similar problems and solutions, or open a new topic to discuss your specific issue.</p>
-                        <a href="https://support.abp.io/QA/Questions" class="btn btn-brand soft" target="_blank">Visit Support</a>
-                        <img class="" src="/images/getting-started/img-support.png">
-                    </div>
+            <div class="card border-info mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Neden sadece “Ana sayfa” ve şablon içerik vardı?</h5>
+                    <ul class="mb-0">
+                        <li>
+                            <strong>Ana sayfa:</strong> Proje oluşturulurken gelen varsayılan <code>Index.cshtml</code> metni; iş mantığı değiştirilmemişti.
+                        </li>
+                        <li>
+                            <strong>Modül menüleri:</strong> Dolap, Try-On, topluluk vb. şu an <strong>uygulama servisleri + otomatik HTTP API</strong> olarak var; çoğu için Razor/MVC ekranı eklenmedi. Menüye öğe eklemek için <code>OVOMenuContributor</code> ve ilgili sayfalar gerekir.
+                        </li>
+                        <li>
+                            <strong>Üst çubukta “Giriş”:</strong> LeptonX teması genelde sağ üstte gösterir; bazen çözünürlük veya tema sürümüyle görünmez. Doğrudan <a href="/Account/Login">/Account/Login</a> adresini kullanabilirsiniz.
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="col-12 d-flex">
-                <div class="card h-md-100 overflow-hidden">
-                    <div class="card-body pb-0">
-                        <div class="abp-blog abp-logo mb-2"></div>
-                        <p class="text-muted mb-2">You can find content on .NET development, cross-platform, ASP.NET application templates, ABP-related news, and more.</p>
-                        <a href="https://blog.abp.io/abp" class="btn btn-brand soft" target="_blank">Visit Blog</a>
-                        <img style="margin-bottom: -24px;" src="/images/getting-started/img-blog.png">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6 d-flex">
-        <div class="card h-100 overflow-hidden">
-            <div class="card-body">
-                <div class="abp-community abp-logo mb-2"></div>
-                <p class="lead text-muted">A unique community platform for <span class="fw-bold">ABP Lovers!</span></p>
-                <p class="text-muted mb-2">Explore all ABP users' experiences with the ABP Framework, discover articles and videos on how to use ABP, and join raffles for a chance to win surprise gifts!</p>
-                <a class="btn btn-brand soft mb-3" href="https://community.abp.io/" target="_blank">Join ABP Community</a>
-            </div>
-            <img class="mt-3" src="/images/getting-started/img-community.png">
+            <p class="text-muted small mb-0">
+                Yönetim menüsü (kiracı, kullanıcılar, roller, izinler): giriş yaptıktan sonra sol menüde <strong>Yönetim</strong> altında.
+            </p>
         </div>
     </div>
 </div>

@@ -29,14 +29,31 @@ public class Program
 
         try
         {
-            Log.Information("Starting web host.");
-            var builder = WebApplication.CreateBuilder(args);
+            var (hostArgs, swaggerOut) = SwaggerCli.SplitHostAndSwaggerArgs(args);
+            if (swaggerOut is not null)
+            {
+                Log.Information("OpenAPI dışa aktarımı: {Path}", swaggerOut);
+            }
+            else
+            {
+                Log.Information("Starting web host.");
+            }
+
+            var builder = WebApplication.CreateBuilder(hostArgs);
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
             await builder.AddApplicationAsync<OVOWebModule>();
             var app = builder.Build();
             await app.InitializeApplicationAsync();
+
+            if (swaggerOut is not null)
+            {
+                await SwaggerDocumentExporter.ExportAsync(app, swaggerOut);
+                await app.DisposeAsync();
+                return 0;
+            }
+
             await app.RunAsync();
             return 0;
         }
